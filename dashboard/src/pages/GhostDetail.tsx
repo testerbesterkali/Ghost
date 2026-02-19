@@ -1,4 +1,3 @@
-```
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -47,16 +46,15 @@ export default function GhostDetail() {
     if (!ghost) return <div className="empty-state"><Bot /><h3>Ghost not found</h3></div>;
 
     const successRate = executions.length > 0
-        ? Math.round((executions.filter((e) => e.status === 'completed').length / executions.length) * 100)
+        ? Math.round((executions.filter((ex) => ex.status === 'completed').length / executions.length) * 100)
         : 0;
 
     const avgSatisfaction = feedback.length > 0
-        ? (feedback.reduce((s, f) => s + (f.satisfaction_score || 0), 0) / feedback.length).toFixed(1)
+        ? (feedback.reduce((s, fb) => s + (fb.satisfaction_score || 0), 0) / feedback.length).toFixed(1)
         : '—';
 
     return (
         <div>
-            {/* Back + Header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
                 <button className="btn-icon" onClick={() => navigate('/ghosts')}>
                     <ArrowLeft size={16} />
@@ -85,7 +83,6 @@ export default function GhostDetail() {
                 </div>
             </div>
 
-            {/* Stat Row */}
             <div className="dashboard-grid" style={{ marginBottom: 24 }}>
                 <div className="card stat-card">
                     <div className="stat-icon orange"><Bot size={18} /></div>
@@ -109,12 +106,11 @@ export default function GhostDetail() {
                 </div>
             </div>
 
-            {/* Tabs */}
             <div className="filters" style={{ marginBottom: 18 }}>
                 {(['plan', 'versions', 'executions', 'feedback'] as const).map((tab) => (
                     <button
                         key={tab}
-                        className={`filter - chip${ activeTab === tab ? ' active' : '' } `}
+                        className={"filter-chip" + (activeTab === tab ? ' active' : '')}
                         onClick={() => setActiveTab(tab)}
                     >
                         {tab === 'plan' ? 'Execution Plan' : tab.charAt(0).toUpperCase() + tab.slice(1)} ({
@@ -126,7 +122,6 @@ export default function GhostDetail() {
                 ))}
             </div>
 
-            {/* Tab Content */}
             {activeTab === 'plan' && (
                 <div className="card card-accent">
                     <div className="card-header">
@@ -207,13 +202,13 @@ export default function GhostDetail() {
                             <table>
                                 <thead><tr><th>Status</th><th>Steps</th><th>Trigger</th><th>Duration</th><th>Started</th></tr></thead>
                                 <tbody>
-                                    {executions.map((e) => (
-                                        <tr key={e.id}>
-                                            <td><span className={`badge badge - ${ e.status } `}>{e.status}</span></td>
-                                            <td className="mono">{e.step_count}</td>
-                                            <td className="badge badge-pending" style={{ fontSize: 10 }}>{e.trigger}</td>
-                                            <td className="mono">{e.completed_at ? `${ Math.round((new Date(e.completed_at).getTime() - new Date(e.started_at).getTime()) / 1000) } s` : '—'}</td>
-                                            <td className="mono text-muted">{new Date(e.started_at).toLocaleString()}</td>
+                                    {executions.map((ex) => (
+                                        <tr key={ex.id}>
+                                            <td><span className={"badge badge-" + ex.status}>{ex.status}</span></td>
+                                            <td className="mono">{ex.step_count}</td>
+                                            <td><span className="badge badge-pending" style={{ fontSize: 10 }}>{ex.trigger}</span></td>
+                                            <td className="mono">{ex.completed_at ? Math.round((new Date(ex.completed_at).getTime() - new Date(ex.started_at).getTime()) / 1000) + 's' : '—'}</td>
+                                            <td className="mono text-muted">{new Date(ex.started_at).toLocaleString()}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -231,8 +226,8 @@ export default function GhostDetail() {
                         </div>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                            {feedback.map((f) => (
-                                <div key={f.id} style={{
+                            {feedback.map((fb) => (
+                                <div key={fb.id} style={{
                                     padding: 14,
                                     background: 'var(--bg-glass)',
                                     borderRadius: 'var(--radius-sm)',
@@ -240,12 +235,11 @@ export default function GhostDetail() {
                                 }}>
                                     <div className="flex-center" style={{ justifyContent: 'space-between' }}>
                                         <div>
-                                            <span style={{ fontSize: 18, marginRight: 6 }}>{'⭐'.repeat(f.satisfaction_score || 0)}</span>
-                                            <span className="mono text-muted">{f.satisfaction_score}/5</span>
+                                            <span className="mono text-muted">{fb.satisfaction_score}/5</span>
                                         </div>
-                                        <span className="mono text-muted">{new Date(f.created_at).toLocaleString()}</span>
+                                        <span className="mono text-muted">{new Date(fb.created_at).toLocaleString()}</span>
                                     </div>
-                                    {f.notes && <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 8 }}>{f.notes}</p>}
+                                    {fb.notes && <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 8 }}>{fb.notes}</p>}
                                 </div>
                             ))}
                         </div>
