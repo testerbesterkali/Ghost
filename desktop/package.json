@@ -1,12 +1,28 @@
 {
-  "name": "desktop",
+  "name": "ghost-desktop",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Ghost Desktop Agent — cross-application observation engine",
+  "main": "dist/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "start": "electron dist/main.js",
+    "dev": "tsc && electron dist/main.js"
   },
-  "keywords": [],
+  "keywords": [
+    "ghost",
+    "automation",
+    "electron",
+    "desktop-agent"
+  ],
   "author": "",
-  "license": "ISC"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "electron": "^34.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0",
+    "active-win": "^9.0.0"
+  }
 }
