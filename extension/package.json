@@ -1,0 +1,25 @@
+{
+  "name": "ghost-shadow",
+  "version": "1.0.0",
+  "description": "Ghost Shadow — Autonomous Workflow Observation Engine",
+  "private": true,
+  "scripts": {
+    "dev": "webpack --mode development --watch",
+    "build": "webpack --mode production",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "copy-webpack-plugin": "^12.0.2",
+    "css-loader": "^7.1.2",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.4.5",
+    "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "crypto-js": "^4.2.0"
+  }
+}

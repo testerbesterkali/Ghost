@@ -1,0 +1,17 @@
+# .antigravity
+strict_mode: true
+prd_path: ./prd.md
+forbidden_patterns:
+  - "TODO"
+  - "FIXME"
+  - "dummy"
+  - "mock"
+  - "placeholder"
+  - "example.com"
+  - "your_api_key_here"
+required_patterns:
+  - "export async function"
+  - "try {"
+  - "catch (error)"
+  - "logger."
+  - "trace."

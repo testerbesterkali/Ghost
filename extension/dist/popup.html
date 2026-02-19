@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Ghost Shadow</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <div class="logo-row">
+        <div class="logo-icon">👻</div>
+        <div>
+          <h1>Ghost Shadow</h1>
+          <span class="version">v1.0.0</span>
+        </div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="enableToggle" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </header>
+
+    <section class="stats-section">
+      <div class="stat-row">
+        <span class="stat-label">Events Captured</span>
+        <span class="stat-value" id="eventsReceived">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Events Processed</span>
+        <span class="stat-value" id="eventsProcessed">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Events Transmitted</span>
+        <span class="stat-value" id="eventsSent">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Buffer</span>
+        <span class="stat-value" id="bufferSize">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Status</span>
+        <span class="stat-value status-badge" id="status">Active</span>
+      </div>
+    </section>
+
+    <section class="config-section">
+      <h2>Configuration</h2>
+      <div class="form-group">
+        <label for="endpoint">Supabase Edge Function URL</label>
+        <input type="url" id="endpoint" placeholder="https://your-project.supabase.co/functions/v1/ingest-events">
+      </div>
+      <div class="form-group">
+        <label for="apiKey">Supabase Anon Key</label>
+        <input type="password" id="apiKey" placeholder="eyJhbGciOi...">
+      </div>
+      <div class="form-group">
+        <label for="orgId">Organization ID</label>
+        <input type="text" id="orgId" placeholder="your-org-id">
+      </div>
+      <div class="button-row">
+        <button id="saveConfig" class="btn btn-primary">Save</button>
+        <button id="flushBtn" class="btn btn-secondary">Flush Now</button>
+      </div>
+    </section>
+
+    <footer class="popup-footer">
+      <span>🔒 All data processed on-device</span>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
