@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import {
     Ghost,
     LayoutDashboard,
@@ -10,7 +11,9 @@ import {
     Search,
     Bell,
     LogOut,
+    BarChart3,
 } from 'lucide-react';
+import { useNotifications, NotificationPanel } from './NotificationCenter';
 
 const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Overview' },
@@ -18,6 +21,7 @@ const navItems = [
     { to: '/patterns', icon: Sparkles, label: 'Patterns' },
     { to: '/ghosts', icon: Bot, label: 'Ghosts' },
     { to: '/executions', icon: Play, label: 'Executions' },
+    { to: '/monitor', icon: BarChart3, label: 'Monitor' },
     { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
@@ -27,12 +31,15 @@ const pageTitles: Record<string, string> = {
     '/patterns': 'Detected Patterns',
     '/ghosts': 'Ghosts',
     '/executions': 'Executions',
+    '/monitor': 'Ghost Watch',
     '/settings': 'Settings',
 };
 
 export default function Layout() {
     const location = useLocation();
     const title = pageTitles[location.pathname] || 'Ghost';
+    const [showNotifs, setShowNotifs] = useState(false);
+    const { notifications, unreadCount, markAllRead, dismiss } = useNotifications();
 
     return (
         <div className="app-layout">
@@ -73,16 +80,51 @@ export default function Layout() {
 
                     <div className="header-search">
                         <Search />
-                        <input placeholder="Enter your search request" />
+                        <input placeholder="Search events, patterns, ghosts..." />
                     </div>
 
                     <div className="header-right">
-                        <button className="header-icon-btn" title="Notifications">
-                            <Bell />
-                        </button>
+                        <div style={{ position: 'relative' }}>
+                            <button
+                                className="header-icon-btn"
+                                title="Notifications"
+                                onClick={() => setShowNotifs(!showNotifs)}
+                            >
+                                <Bell />
+                                {unreadCount > 0 && (
+                                    <span style={{
+                                        position: 'absolute',
+                                        top: -2,
+                                        right: -2,
+                                        width: 16,
+                                        height: 16,
+                                        borderRadius: '50%',
+                                        background: 'var(--accent)',
+                                        color: '#fff',
+                                        fontSize: 9,
+                                        fontWeight: 700,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        {unreadCount}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
                         <div className="header-avatar">G</div>
                     </div>
                 </header>
+
+                {/* Notification Panel */}
+                {showNotifs && (
+                    <NotificationPanel
+                        notifications={notifications}
+                        onDismiss={dismiss}
+                        onMarkAllRead={markAllRead}
+                        onClose={() => setShowNotifs(false)}
+                    />
+                )}
 
                 {/* Page */}
                 <main className="page-content">

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Activity, Bot, Sparkles, Play, TrendingUp, Zap, Clock, AlertTriangle } from 'lucide-react';
+import EventVolumeChart from '../components/EventVolumeChart';
+import EventDonutChart from '../components/EventDonutChart';
 
 interface Stats {
     totalEvents: number;
@@ -9,6 +11,8 @@ interface Stats {
     totalExecutions: number;
     recentEvents: any[];
     recentPatterns: any[];
+    allEvents: any[];
+    eventDistribution: Array<{ name: string; value: number; color: string }>;
 }
 
 export default function Overview() {
@@ -19,16 +23,22 @@ export default function Overview() {
         totalExecutions: 0,
         recentEvents: [],
         recentPatterns: [],
+        allEvents: [],
+        eventDistribution: [],
     });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         loadStats();
-        // Set up realtime subscription
         const channel = supabase
             .channel('overview')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'secure_events' }, () => {
-                setStats((s) => ({ ...s, totalEvents: s.totalEvents + 1 }));
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'secure_events' }, (payload) => {
+                setStats((s) => ({
+                    ...s,
+                    totalEvents: s.totalEvents + 1,
+                    allEvents: [payload.new, ...s.allEvents].slice(0, 500),
+                    recentEvents: [payload.new, ...s.recentEvents].slice(0, 5),
+                }));
             })
             .subscribe();
 
@@ -37,14 +47,33 @@ export default function Overview() {
 
     async function loadStats() {
         try {
-            const [events, patterns, ghosts, executions, recentEvts, recentPats] = await Promise.all([
+            const [events, patterns, ghosts, executions, recentEvts, recentPats, allEvts, distrib] = await Promise.all([
                 supabase.from('secure_events').select('*', { count: 'exact', head: true }),
                 supabase.from('detected_patterns').select('*', { count: 'exact', head: true }),
                 supabase.from('ghosts').select('*', { count: 'exact', head: true }),
                 supabase.from('executions').select('*', { count: 'exact', head: true }),
                 supabase.from('secure_events').select('*').order('ingested_at', { ascending: false }).limit(5),
                 supabase.from('detected_patterns').select('*').order('created_at', { ascending: false }).limit(5),
+                supabase.from('secure_events').select('ingested_at').order('ingested_at', { ascending: false }).limit(500),
+                supabase.from('secure_events').select('event_type'),
             ]);
+
+            // Compute event distribution from real data
+            const distribMap: Record<string, number> = {};
+            (distrib.data || []).forEach((e: any) => {
+                distribMap[e.event_type] = (distribMap[e.event_type] || 0) + 1;
+            });
+            const colorMap: Record<string, string> = {
+                user_int: '#f27a1a',
+                dom_mut: '#42a5f5',
+                network: '#4caf50',
+                error: '#f44336',
+            };
+            const eventDistribution = Object.entries(distribMap).map(([name, value]) => ({
+                name: name === 'user_int' ? 'Interaction' : name === 'dom_mut' ? 'DOM Mutation' : name.charAt(0).toUpperCase() + name.slice(1),
+                value,
+                color: colorMap[name] || '#ff9800',
+            }));
 
             setStats({
                 totalEvents: events.count || 0,
@@ -53,6 +82,8 @@ export default function Overview() {
                 totalExecutions: executions.count || 0,
                 recentEvents: recentEvts.data || [],
                 recentPatterns: recentPats.data || [],
+                allEvents: allEvts.data || [],
+                eventDistribution,
             });
         } catch (err) {
             console.error('Failed to load stats:', err);
@@ -64,38 +95,22 @@ export default function Overview() {
         <div>
             {/* Stat Cards */}
             <div className="dashboard-grid">
-                <StatCard
-                    icon={<Activity />}
-                    iconClass="orange"
-                    label="Total Events"
-                    value={stats.totalEvents}
-                    change="+12%"
-                    changeDir="up"
-                />
-                <StatCard
-                    icon={<Sparkles />}
-                    iconClass="blue"
-                    label="Detected Patterns"
-                    value={stats.totalPatterns}
-                    change="+3"
-                    changeDir="up"
-                />
-                <StatCard
-                    icon={<Bot />}
-                    iconClass="green"
-                    label="Active Ghosts"
-                    value={stats.totalGhosts}
-                    change="0"
-                    changeDir="up"
-                />
-                <StatCard
-                    icon={<Play />}
-                    iconClass="red"
-                    label="Executions"
-                    value={stats.totalExecutions}
-                    change="+5"
-                    changeDir="up"
-                />
+                <StatCard icon={<Activity />} iconClass="orange" label="Total Events" value={stats.totalEvents} change="+12%" changeDir="up" />
+                <StatCard icon={<Sparkles />} iconClass="blue" label="Detected Patterns" value={stats.totalPatterns} change="+3" changeDir="up" />
+                <StatCard icon={<Bot />} iconClass="green" label="Active Ghosts" value={stats.totalGhosts} change="0" changeDir="up" />
+                <StatCard icon={<Play />} iconClass="red" label="Executions" value={stats.totalExecutions} change="+5" changeDir="up" />
+            </div>
+
+            {/* Event Volume Chart */}
+            <div className="card" style={{ marginBottom: 18 }}>
+                <div className="card-header">
+                    <div>
+                        <div className="card-title">Event Volume</div>
+                        <div className="card-subtitle">Events captured over time (15-min buckets)</div>
+                    </div>
+                    <TrendingUp size={16} className="text-accent" />
+                </div>
+                <EventVolumeChart events={stats.allEvents} />
             </div>
 
             {/* Content Grid */}
@@ -107,7 +122,7 @@ export default function Overview() {
                             <div className="card-title">Recent Events</div>
                             <div className="card-subtitle">Live feed from browser extension</div>
                         </div>
-                        <TrendingUp size={16} className="text-accent" />
+                        <Zap size={16} className="text-accent" />
                     </div>
                     {loading ? (
                         <div className="empty-state"><p>Loading...</p></div>
@@ -121,12 +136,7 @@ export default function Overview() {
                         <div className="table-container">
                             <table>
                                 <thead>
-                                    <tr>
-                                        <th>Type</th>
-                                        <th>Intent</th>
-                                        <th>Confidence</th>
-                                        <th>Time</th>
-                                    </tr>
+                                    <tr><th>Type</th><th>Intent</th><th>Confidence</th><th>Time</th></tr>
                                 </thead>
                                 <tbody>
                                     {stats.recentEvents.map((evt, i) => (
@@ -162,29 +172,24 @@ export default function Overview() {
                         </div>
                         <Sparkles size={16} className="text-accent" />
                     </div>
-
                     <div style={{ marginBottom: 16 }}>
                         <div className="flex-center" style={{ justifyContent: 'space-between' }}>
                             <span className="stat-label">Patterns Found</span>
                             <span className="badge badge-active">{stats.totalPatterns}</span>
                         </div>
                     </div>
-
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         <div className="stat-value animated" style={{ fontSize: 48, textAlign: 'center', margin: '16px 0' }}>
                             {stats.totalEvents > 0 ? Math.round((stats.totalPatterns / Math.max(stats.totalEvents, 1)) * 100) : 0}%
                         </div>
                         <div className="stat-label" style={{ textAlign: 'center' }}>Pattern Detection Rate</div>
                     </div>
-
                     {stats.recentPatterns.length > 0 && (
                         <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
                             {stats.recentPatterns.slice(0, 3).map((p, i) => (
                                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <span style={{ fontSize: 13 }}>{p.suggested_name || 'Unnamed'}</span>
-                                    <span className={`badge badge-${p.status === 'auto_suggested' ? 'active' : 'needs-review'}`}>
-                                        {p.status}
-                                    </span>
+                                    <span className={`badge badge-${p.status === 'auto_suggested' ? 'active' : 'needs-review'}`}>{p.status}</span>
                                 </div>
                             ))}
                         </div>
@@ -203,6 +208,7 @@ export default function Overview() {
                         <PipelineStep label="Ingest Events" status="active" />
                         <PipelineStep label="Pattern Detector" status="active" />
                         <PipelineStep label="Ghost Executor" status="active" />
+                        <PipelineStep label="Approve Ghost" status="active" />
                     </div>
                 </div>
 
@@ -210,12 +216,7 @@ export default function Overview() {
                     <div className="card-header">
                         <div className="card-title">Event Distribution</div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        <EventBar label="User Interaction" pct={45} color="var(--accent)" />
-                        <EventBar label="DOM Mutation" pct={30} color="var(--info)" />
-                        <EventBar label="Network" pct={20} color="var(--success)" />
-                        <EventBar label="Error" pct={5} color="var(--error)" />
-                    </div>
+                    <EventDonutChart data={stats.eventDistribution} />
                 </div>
 
                 <div className="card">
@@ -255,20 +256,6 @@ function PipelineStep({ label, status }: { label: string; status: string }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 13 }}>{label}</span>
             <span className={`badge badge-${status}`}>{status}</span>
-        </div>
-    );
-}
-
-function EventBar({ label, pct, color }: { label: string; pct: number; color: string }) {
-    return (
-        <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{label}</span>
-                <span className="mono" style={{ fontSize: 11 }}>{pct}%</span>
-            </div>
-            <div style={{ height: 6, background: 'var(--bg-tertiary)', borderRadius: 3 }}>
-                <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 3, transition: 'width 0.5s' }} />
-            </div>
         </div>
     );
 }

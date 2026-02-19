@@ -4,7 +4,9 @@ import Overview from './pages/Overview';
 import Events from './pages/Events';
 import Patterns from './pages/Patterns';
 import Ghosts from './pages/Ghosts';
+import GhostDetail from './pages/GhostDetail';
 import Executions from './pages/Executions';
+import Monitor from './pages/Monitor';
 import Settings from './pages/Settings';
 
 export default function App() {
@@ -16,7 +18,9 @@ export default function App() {
           <Route path="/events" element={<Events />} />
           <Route path="/patterns" element={<Patterns />} />
           <Route path="/ghosts" element={<Ghosts />} />
+          <Route path="/ghosts/:id" element={<GhostDetail />} />
           <Route path="/executions" element={<Executions />} />
+          <Route path="/monitor" element={<Monitor />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>

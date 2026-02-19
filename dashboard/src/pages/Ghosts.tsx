@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Bot, Play, Pause, Trash2, MoreHorizontal } from 'lucide-react';
+import { Bot, Play, Pause, Trash2, Eye } from 'lucide-react';
 
 export default function Ghosts() {
     const [ghosts, setGhosts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     useEffect(() => { loadGhosts(); }, []);
 
@@ -15,7 +17,8 @@ export default function Ghosts() {
         setLoading(false);
     }
 
-    async function toggleActive(ghost: any) {
+    async function toggleActive(e: React.MouseEvent, ghost: any) {
+        e.stopPropagation();
         const newStatus = ghost.is_active ? 'paused' : 'active';
         await supabase.from('ghosts')
             .update({ is_active: !ghost.is_active, status: newStatus, updated_at: new Date().toISOString() })
@@ -23,14 +26,16 @@ export default function Ghosts() {
         loadGhosts();
     }
 
-    async function approveGhost(id: string) {
+    async function approveGhost(e: React.MouseEvent, id: string) {
+        e.stopPropagation();
         await supabase.from('ghosts')
             .update({ status: 'approved', updated_at: new Date().toISOString() })
             .eq('id', id);
         loadGhosts();
     }
 
-    async function deleteGhost(id: string) {
+    async function deleteGhost(e: React.MouseEvent, id: string) {
+        e.stopPropagation();
         await supabase.from('ghosts').delete().eq('id', id);
         loadGhosts();
     }
@@ -79,7 +84,11 @@ export default function Ghosts() {
                             </thead>
                             <tbody>
                                 {ghosts.map((ghost) => (
-                                    <tr key={ghost.id}>
+                                    <tr
+                                        key={ghost.id}
+                                        onClick={() => navigate(`/ghosts/${ghost.id}`)}
+                                        style={{ cursor: 'pointer' }}
+                                    >
                                         <td>
                                             <div>
                                                 <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{ghost.name}</div>
@@ -105,19 +114,21 @@ export default function Ghosts() {
                                         <td>
                                             <div style={{ display: 'flex', gap: 6 }}>
                                                 {ghost.status === 'pending_approval' && (
-                                                    <button className="btn btn-primary btn-sm" onClick={() => approveGhost(ghost.id)}>
+                                                    <button className="btn btn-primary btn-sm" onClick={(e) => approveGhost(e, ghost.id)}>
                                                         Approve
                                                     </button>
                                                 )}
                                                 {(ghost.status === 'approved' || ghost.status === 'active' || ghost.status === 'paused') && (
-                                                    <button className="btn-icon" title={ghost.is_active ? 'Pause' : 'Activate'} onClick={() => toggleActive(ghost)}>
+                                                    <button className="btn-icon" title={ghost.is_active ? 'Pause' : 'Activate'} onClick={(e) => toggleActive(e, ghost)}>
                                                         {ghost.is_active ? <Pause size={14} /> : <Play size={14} />}
                                                     </button>
                                                 )}
-                                                <button className="btn-icon" title="Delete" onClick={() => deleteGhost(ghost.id)}>
+                                                <button className="btn-icon" title="View" onClick={(e) => { e.stopPropagation(); navigate(`/ghosts/${ghost.id}`); }}>
+                                                    <Eye size={14} />
+                                                </button>
+                                                <button className="btn-icon" title="Delete" onClick={(e) => deleteGhost(e, ghost.id)}>
                                                     <Trash2 size={14} />
                                                 </button>
-                                                <button className="btn-icon"><MoreHorizontal size={14} /></button>
                                             </div>
                                         </td>
                                     </tr>
