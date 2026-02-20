@@ -10,11 +10,12 @@ export interface SecureEvent {
     intentVector: number[];
     structuralHash: string;
     orgId: string;
-    eventType: 'dom_mut' | 'user_int' | 'network' | 'error';
+    eventType: 'dom_mut' | 'user_int' | 'network' | 'error' | 'app_switch';
     intentLabel: string;
     intentConfidence: number;
     elementSignature: string | null;
     sequenceNumber: number;
+    metadata?: Record<string, any>;
 }
 
 /** Batch payload from the extension (PRD §7.1) */

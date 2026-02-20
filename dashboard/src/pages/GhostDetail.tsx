@@ -42,6 +42,20 @@ export default function GhostDetail() {
         loadAll();
     }
 
+    async function runTest() {
+        const { data, error } = await supabase.functions.invoke('ghost-executor', {
+            body: { ghostId: id, parameters: ghost.parameters || {}, trigger: 'manual' },
+        });
+
+        if (error) {
+            console.error('Execution failed:', error);
+        } else {
+            console.log('Execution started:', data);
+            setActiveTab('executions');
+        }
+        loadAll();
+    }
+
     if (loading) return <div className="empty-state"><p>Loading ghost...</p></div>;
     if (!ghost) return <div className="empty-state"><Bot /><h3>Ghost not found</h3></div>;
 
@@ -71,6 +85,11 @@ export default function GhostDetail() {
                     {ghost.status === 'pending_approval' && (
                         <button className="btn btn-primary" onClick={() => handleAction('approve')}>
                             <CheckCircle size={14} /> Approve
+                        </button>
+                    )}
+                    {(ghost.status === 'approved' || ghost.status === 'active') && (
+                        <button className="btn btn-primary" onClick={runTest}>
+                            <Play size={14} /> Run Test
                         </button>
                     )}
                     <button className="btn btn-secondary" onClick={() => handleAction(ghost.is_active ? 'pause' : 'activate')}>

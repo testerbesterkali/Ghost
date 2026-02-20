@@ -88,14 +88,19 @@ serve(async (req: Request) => {
         // Step 2: Sequence embedding + clustering
         const events = recentEvents.map(rowToSecureEvent);
         const sequences = extractSequences(events, WINDOW_SIZE);
+        console.log(`[pattern-detector] Extracted ${sequences.length} sequences from ${events.length} events`);
+
         const clusters = clusterSequences(sequences);
+        console.log(`[pattern-detector] Formed ${clusters.length} initial clusters`);
 
         // Step 3: Filter clusters by minimum size and temporal constraint
         const validClusters = clusters.filter(
             (c) => c.members.length >= MIN_CLUSTER_SIZE,
         );
+        console.log(`[pattern-detector] Found ${validClusters.length} valid clusters (>= ${MIN_CLUSTER_SIZE} members)`);
 
         if (validClusters.length === 0) {
+            console.log('[pattern-detector] No significant patterns found. Similarity stats:', clusters.length > 0 ? 'centroids exist' : 'no clusters');
             return jsonResponse<ApiResponse>(
                 {
                     success: true,
@@ -303,7 +308,10 @@ async function abstractCluster(
         .slice(0, 5)
         .map((member, idx) => {
             const intentFlow = member.events
-                .map((e) => `${e.intentLabel} (${e.eventType}, sig: ${e.elementSignature || 'none'})`)
+                .map((e) => {
+                    const meta = e.metadata ? ` [Context: ${JSON.stringify(e.metadata)}]` : '';
+                    return `${e.intentLabel} (${e.eventType})${meta}`;
+                })
                 .join(' → ');
             return `Instance ${idx + 1}: ${intentFlow}`;
         });
@@ -312,11 +320,21 @@ async function abstractCluster(
         messages: [
             {
                 role: 'system',
-                content: `You are a workflow pattern analyzer. Given sequences of user intent signals, identify the underlying workflow being performed and generalize it into a reusable template. Respond in JSON format with these fields: name (string), description (string), confidence (0-1), trigger (string), parameters (array of {name, type, description}).`,
+                content: `You are a workflow pattern analyzer. Given sequences of user intent signals and their metadata (URLs, page titles, app names), identify the underlying workflow and generalize it into a highly specific, goal-oriented reusable template. 
+
+CRITICAL: Avoid generic names like "Navigation", "Data Entry", or "Workflow". Instead, use site-specific or task-specific names like "LinkedIn Job Application", "Jira Issue Creation", "Salesforce Lead Update", or "Email Draft Composition".
+
+Respond in JSON format with these fields: name (string), description (string), confidence (0-1), trigger (string), parameters (array of {name, type, description}).`,
             },
             {
                 role: 'user',
-                content: `Analyze these similar user interaction sequences and identify the workflow pattern:\n\n${instances.join('\n')}\n\nIntent distribution: ${summarizeIntents(cluster.intentLabels)}\n\nGeneralize to a reusable workflow template. Return JSON only.`,
+                content: `Analyze these user interaction sequences (with metadata) and identify the specific workflow pattern:
+
+${instances.join('\n')}
+
+Intent distribution: ${summarizeIntents(cluster.intentLabels)}
+
+Generalize to a specific, descriptive workflow template. Return JSON only.`,
             },
         ],
         temperature: 0.3,
@@ -441,6 +459,7 @@ function rowToSecureEvent(row: any): SecureEvent {
         intentConfidence: row.intent_confidence,
         elementSignature: row.element_signature,
         sequenceNumber: row.sequence_number,
+        metadata: row.metadata || {},
     };
 }
 

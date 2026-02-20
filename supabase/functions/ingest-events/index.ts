@@ -105,6 +105,7 @@ serve(async (req: Request) => {
             sequence_number: event.sequenceNumber,
             device_fingerprint: deviceId,
             batch_id: batch.batchId,
+            metadata: event.metadata || {},
             ingested_at: new Date().toISOString(),
         }));
 

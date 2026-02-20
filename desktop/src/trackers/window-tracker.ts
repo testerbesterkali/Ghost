@@ -67,16 +67,19 @@ export class WindowTracker {
 
             // Send to Supabase via transmitter
             await this.transmitter.send({
-                event_type: 'app_switch',
-                timestamp: new Date().toISOString(),
-                session_id: this.transmitter.sessionId,
-                context: {
+                eventType: 'app_switch',
+                timestampBucket: new Date().toISOString(),
+                sessionFingerprint: this.transmitter.sessionId,
+                metadata: {
                     app: win.owner.name,
                     title: win.title,
-                    bounds: win.bounds,
                     url: (win as any).url || null,
-                    platform: process.platform,
                 },
+                intentLabel: 'navigation',
+                intentConfidence: 1.0,
+                intentVector: new Array(128).fill(0), // Placeholder
+                structuralHash: 'desktop-win-switch',
+                sequenceNumber: this.eventCount,
             });
         } catch (err) {
             // active-win may fail on some platforms or permissions
